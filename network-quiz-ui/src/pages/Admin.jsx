@@ -14,6 +14,15 @@ export default function Admin() {
     const [examSettings, setExamSettings] = useState({});
     const navigate = useNavigate();
 
+    // Pagination states
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 25;
+
+    // Reset pagination on viewMode change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [viewMode]);
+
     // Load exam settings from localStorage on mount
     useEffect(() => {
         const stored = localStorage.getItem('quiz_exam_settings');
@@ -109,6 +118,34 @@ export default function Admin() {
     }
 
     if (loading) return <div className="text-center mt-20 text-xl font-semibold">Đang tải dữ liệu...</div>;
+
+    const totalPages = Math.ceil(questions.length / ITEMS_PER_PAGE);
+    const displayedQuestions = questions.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
+
+    const getPageNumbers = () => {
+        const pages = [];
+        const start = Math.max(1, currentPage - 2);
+        const end = Math.min(totalPages, currentPage + 2);
+        
+        if (start > 1) {
+            pages.push(1);
+            if (start > 2) pages.push('...');
+        }
+        
+        for (let i = start; i <= end; i++) {
+            pages.push(i);
+        }
+        
+        if (end < totalPages) {
+            if (end < totalPages - 1) pages.push('...');
+            pages.push(totalPages);
+        }
+        
+        return pages;
+    };
 
     return (
         <div className="max-w-6xl mx-auto p-6">
@@ -219,7 +256,7 @@ export default function Admin() {
 
             {viewMode === 'list' && (
                 <div className="space-y-6">
-                    {questions.slice(0, 50).map((q) => (
+                    {displayedQuestions.map((q) => (
                         <div key={q.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                             {editing === q.id ? (
                                 <EditForm question={q} onSave={(data) => handleSave(q.id, data)} onCancel={() => setEditing(null)} />
@@ -240,12 +277,74 @@ export default function Admin() {
                                             </div>
                                         ))}
                                     </div>
+                                    {q.explanation && (
+                                        <div className="mt-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 text-sm text-gray-600 leading-relaxed">
+                                            <span className="font-extrabold text-blue-700 block mb-1">💡 Giải thích từ AI:</span>
+                                            {q.explanation}
+                                        </div>
+                                    )}
                                     {!q.correct_answer && <p className="text-yellow-600 text-sm mt-3 font-medium">⚠ Chưa có đáp án đúng</p>}
                                 </div>
                             )}
                         </div>
                     ))}
-                    {questions.length > 50 && <p className="text-center text-gray-500 mt-4">Chỉ hiển thị 50 câu đầu tiên. Tính năng phân trang sẽ được cập nhật thêm.</p>}
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-gray-200">
+                            <span className="text-sm font-semibold text-gray-500">
+                                Hiển thị <span className="text-gray-800 font-extrabold">{Math.min(questions.length, (currentPage - 1) * ITEMS_PER_PAGE + 1)}-{Math.min(questions.length, currentPage * ITEMS_PER_PAGE)}</span> trong tổng số <span className="text-blue-600 font-extrabold">{questions.length}</span> câu hỏi
+                            </span>
+                            
+                            <div className="flex items-center gap-1.5 bg-white p-1 rounded-2xl border border-gray-150 shadow-sm">
+                                <button
+                                    onClick={() => {
+                                        setCurrentPage(prev => Math.max(1, prev - 1));
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}
+                                    disabled={currentPage === 1}
+                                    className="p-2 rounded-xl text-gray-500 hover:text-blue-600 hover:bg-slate-50 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                    title="Trang trước"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-left"><path d="m15 18-6-6 6-6"/></svg>
+                                </button>
+                                
+                                {getPageNumbers().map((p, idx) => {
+                                    if (p === '...') {
+                                        return <span key={`dots-${idx}`} className="px-3 py-2 text-gray-400 font-bold select-none">...</span>;
+                                    }
+                                    return (
+                                        <button
+                                            key={p}
+                                            onClick={() => {
+                                                setCurrentPage(p);
+                                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }}
+                                            className={`w-10 h-10 rounded-xl font-bold text-sm transition-all duration-200 ${
+                                                currentPage === p 
+                                                    ? 'bg-blue-600 text-white shadow-md shadow-blue-200' 
+                                                    : 'text-gray-600 hover:bg-slate-50 hover:text-blue-600'
+                                            }`}
+                                        >
+                                            {p}
+                                        </button>
+                                    );
+                                })}
+                                
+                                <button
+                                    onClick={() => {
+                                        setCurrentPage(prev => Math.min(totalPages, prev + 1));
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }}
+                                    disabled={currentPage === totalPages}
+                                    className="p-2 rounded-xl text-gray-500 hover:text-blue-600 hover:bg-slate-50 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                    title="Trang sau"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
