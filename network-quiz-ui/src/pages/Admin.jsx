@@ -169,33 +169,35 @@ export default function Admin() {
 
     return (
         <div className="max-w-6xl mx-auto p-6">
-            <div className="flex justify-between items-center mb-8">
-                <button onClick={() => navigate('/')} className="text-gray-500 hover:text-blue-600 font-medium">&larr; Quay lại Home</button>
-                <div className="flex items-center gap-4">
-                    <h1 className="text-3xl font-bold text-gray-800">Quản trị Câu Hỏi</h1>
-                    <button onClick={() => { setIsAuthenticated(false); sessionStorage.removeItem('adminAuth'); }} className="text-sm bg-red-100 text-red-600 px-3 py-1 rounded-lg font-medium hover:bg-red-200">Đăng xuất</button>
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-6 mb-8">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between w-full lg:w-auto gap-4">
+                    <button onClick={() => navigate('/')} className="text-gray-500 hover:text-blue-600 font-medium self-start">&larr; Quay lại Home</button>
+                    <div className="flex items-center justify-between sm:justify-start gap-4">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Quản trị Câu Hỏi</h1>
+                        <button onClick={() => { setIsAuthenticated(false); sessionStorage.removeItem('adminAuth'); }} className="text-xs bg-red-100 text-red-600 px-3 py-1.5 rounded-xl font-bold hover:bg-red-200 transition">Đăng xuất</button>
+                    </div>
                 </div>
-                <div className="flex gap-4">
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap lg:flex-nowrap gap-3 w-full lg:w-auto">
                     <button 
-                        className={`px-4 py-2 rounded-lg font-medium transition ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                        className={`px-4 py-2.5 rounded-xl font-bold text-sm transition ${viewMode === 'list' ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-250'}`}
                         onClick={() => setViewMode('list')}
                     >
                         Tất cả ({questions.length})
                     </button>
                     <button 
-                        className={`px-4 py-2 rounded-lg font-medium transition ${viewMode === 'duplicates' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                        className={`px-4 py-2.5 rounded-xl font-bold text-sm transition ${viewMode === 'duplicates' ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-250'}`}
                         onClick={() => setViewMode('duplicates')}
                     >
                         Lọc Trùng ({duplicates.length} nhóm)
                     </button>
                     <button 
-                        className={`px-4 py-2 rounded-lg font-medium transition ${viewMode === 'exams' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                        className={`px-4 py-2.5 rounded-xl font-bold text-sm transition ${viewMode === 'exams' ? 'bg-blue-600 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-250'}`}
                         onClick={() => setViewMode('exams')}
                     >
                         Cấu hình Đề (13 đề)
                     </button>
                     <button 
-                        className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-1.5 ${viewMode === 'reports' ? 'bg-red-600 text-white shadow-md shadow-red-200' : 'bg-red-50 text-red-700 hover:bg-red-100'}`}
+                        className={`px-4 py-2.5 rounded-xl font-bold text-sm transition flex items-center justify-center gap-1.5 ${viewMode === 'reports' ? 'bg-red-600 text-white shadow-md shadow-red-200' : 'bg-red-50 text-red-700 hover:bg-red-100'}`}
                         onClick={() => setViewMode('reports')}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-alert-triangle"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
@@ -308,12 +310,12 @@ export default function Admin() {
                                     <EditForm question={q} onSave={(data) => handleSave(q.id, data)} onCancel={() => setEditing(null)} />
                                 ) : (
                                     <div>
-                                        <div className="flex justify-between items-start mb-4 gap-4">
+                                        <div className="flex flex-col sm:flex-row justify-between sm:items-start mb-4 gap-4">
                                             <h3 className="text-lg font-bold text-gray-800 whitespace-pre-wrap flex-1">{q.content}</h3>
-                                            <div className="flex-shrink-0 flex gap-2">
-                                                <button onClick={() => setEditing(q.id)} className="text-blue-600 hover:text-blue-700 px-3.5 py-1.5 bg-blue-50 rounded-xl text-xs font-bold transition">Sửa</button>
-                                                <button onClick={() => handleClearReport(q.id)} className="text-green-600 hover:text-green-700 px-3.5 py-1.5 bg-green-50 rounded-xl text-xs font-bold transition">Bỏ qua báo cáo</button>
-                                                <button onClick={() => handleDelete(q.id)} className="text-red-600 hover:text-red-700 px-3.5 py-1.5 bg-red-50 rounded-xl text-xs font-bold transition">Xóa</button>
+                                            <div className="flex flex-wrap sm:flex-nowrap gap-2 self-start sm:self-auto w-full sm:w-auto justify-end">
+                                                <button onClick={() => setEditing(q.id)} className="flex-1 sm:flex-none text-center text-blue-600 hover:text-blue-700 px-3.5 py-1.5 bg-blue-50 rounded-xl text-xs font-bold transition">Sửa</button>
+                                                <button onClick={() => handleClearReport(q.id)} className="flex-1 sm:flex-none text-center text-green-600 hover:text-green-700 px-3.5 py-1.5 bg-green-50 rounded-xl text-xs font-bold transition whitespace-nowrap">Bỏ qua báo cáo</button>
+                                                <button onClick={() => handleDelete(q.id)} className="flex-1 sm:flex-none text-center text-red-600 hover:text-red-700 px-3.5 py-1.5 bg-red-50 rounded-xl text-xs font-bold transition">Xóa</button>
                                             </div>
                                         </div>
                                         
@@ -357,11 +359,11 @@ export default function Admin() {
                                 <EditForm question={q} onSave={(data) => handleSave(q.id, data)} onCancel={() => setEditing(null)} />
                             ) : (
                                 <div>
-                                    <div className="flex justify-between items-start mb-4">
+                                    <div className="flex flex-col sm:flex-row justify-between sm:items-start mb-4 gap-4">
                                         <h3 className="text-lg font-medium text-gray-800 whitespace-pre-wrap flex-1">{q.content}</h3>
-                                        <div className="ml-4 flex gap-2">
-                                            <button onClick={() => setEditing(q.id)} className="text-blue-500 hover:text-blue-700 px-3 py-1 bg-blue-50 rounded-lg text-sm font-medium">Sửa</button>
-                                            <button onClick={() => handleDelete(q.id)} className="text-red-500 hover:text-red-700 px-3 py-1 bg-red-50 rounded-lg text-sm font-medium">Xóa</button>
+                                        <div className="flex gap-2 w-full sm:w-auto justify-end">
+                                            <button onClick={() => setEditing(q.id)} className="flex-1 sm:flex-none text-center text-blue-500 hover:text-blue-700 px-3.5 py-1.5 bg-blue-50 rounded-xl text-xs font-bold transition">Sửa</button>
+                                            <button onClick={() => handleDelete(q.id)} className="flex-1 sm:flex-none text-center text-red-500 hover:text-red-700 px-3.5 py-1.5 bg-red-50 rounded-xl text-xs font-bold transition">Xóa</button>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">

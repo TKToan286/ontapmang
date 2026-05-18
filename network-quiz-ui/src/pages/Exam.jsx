@@ -203,7 +203,7 @@ export default function Exam() {
                                     const isSelected = answers[q.id] === opt.label;
                                     const isActuallyCorrect = q.correct_answer === opt.label;
                                     
-                                    let btnClass = "w-full text-left p-4 rounded-xl border transition-colors duration-200 ";
+                                    let btnClass = "w-full text-left p-3.5 md:p-4 rounded-xl border transition-colors duration-200 ";
                                     
                                     if (!isAnswered && !submitted) {
                                         btnClass += "border-gray-200 hover:bg-gray-50 hover:border-gray-300";
