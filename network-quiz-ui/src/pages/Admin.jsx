@@ -5,13 +5,36 @@ import { useNavigate } from 'react-router-dom';
 export default function Admin() {
     const [questions, setQuestions] = useState([]);
     const [duplicates, setDuplicates] = useState([]);
-    const [viewMode, setViewMode] = useState('list'); // 'list' | 'duplicates'
+    const [viewMode, setViewMode] = useState('list'); // 'list' | 'duplicates' | 'exams'
     const [loading, setLoading] = useState(false);
     const [editing, setEditing] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [examSettings, setExamSettings] = useState({});
     const navigate = useNavigate();
+
+    // Load exam settings from localStorage on mount
+    useEffect(() => {
+        const stored = localStorage.getItem('quiz_exam_settings');
+        if (stored) {
+            setExamSettings(JSON.parse(stored));
+        }
+    }, []);
+
+    const handleToggleShuffle = (examId, checked) => {
+        const updated = {
+            ...examSettings,
+            [examId]: {
+                ...examSettings[examId],
+                shuffleAnswers: checked
+            }
+        };
+        setExamSettings(updated);
+        localStorage.setItem('quiz_exam_settings', JSON.stringify(updated));
+        // Clear sessionStorage to force immediate regeneration
+        sessionStorage.removeItem('exams');
+    };
 
     const handleLogin = (e) => {
         e.preventDefault();
@@ -108,8 +131,59 @@ export default function Admin() {
                     >
                         Lọc Trùng ({duplicates.length} nhóm)
                     </button>
+                    <button 
+                        className={`px-4 py-2 rounded-lg font-medium transition ${viewMode === 'exams' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                        onClick={() => setViewMode('exams')}
+                    >
+                        Cấu hình Đề (13 đề)
+                    </button>
                 </div>
             </div>
+
+            {viewMode === 'exams' && (
+                <div className="bg-white p-8 rounded-3xl border border-gray-100 shadow-md">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="bg-blue-100 text-blue-600 p-2.5 rounded-xl">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-sliders-horizontal"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="12" x2="12" y1="18" y2="22"/></svg>
+                        </div>
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-800">Cấu hình Đề thi</h2>
+                            <p className="text-sm text-gray-500">Bật/tắt tính năng xáo trộn đáp án độc lập cho từng đề ôn tập</p>
+                        </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {Array.from({ length: 13 }, (_, i) => i + 1).map((examId) => {
+                            const isShuffled = examSettings[examId]?.shuffleAnswers || false;
+                            return (
+                                <div key={examId} className="border border-gray-150 rounded-2xl p-5 bg-slate-50 hover:bg-white hover:border-blue-200 hover:shadow-lg transition duration-300 flex flex-col justify-between group">
+                                    <div className="mb-4">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">Đề thi số</span>
+                                            <span className="text-xs font-semibold text-gray-400">40 câu hỏi</span>
+                                        </div>
+                                        <h3 className="font-extrabold text-xl text-gray-800 group-hover:text-blue-600 transition">Đề {examId}</h3>
+                                        <p className="text-xs text-gray-500 mt-1">Hạt giống xáo trộn: {examId * 1000}</p>
+                                    </div>
+                                    
+                                    <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                                        <span className="text-sm font-bold text-gray-700">Xáo trộn đáp án:</span>
+                                        <label className="relative inline-flex items-center cursor-pointer select-none">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={isShuffled} 
+                                                onChange={(e) => handleToggleShuffle(examId, e.target.checked)}
+                                                className="sr-only peer" 
+                                            />
+                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        </label>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
 
             {viewMode === 'duplicates' && (
                 <div className="space-y-8">

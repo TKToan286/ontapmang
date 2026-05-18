@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Bot, Sparkles, Send, RefreshCw, AlertCircle, MessageSquare } from 'lucide-react';
 
 export default function Exam() {
     const { id } = useParams();
@@ -8,6 +9,11 @@ export default function Exam() {
     const [answers, setAnswers] = useState({});
     const [submitted, setSubmitted] = useState(false);
     const [score, setScore] = useState(0);
+    
+    // AI interactive follow-up chat states
+    const [chatMessages, setChatMessages] = useState({}); // { [questionId]: [{ role, content }] }
+    const [chatLoading, setChatLoading] = useState({}); // { [questionId]: boolean }
+    const [followUpInputs, setFollowUpInputs] = useState({}); // { [questionId]: string }
 
     useEffect(() => {
         const stored = sessionStorage.getItem('exams');
@@ -20,6 +26,61 @@ export default function Exam() {
             navigate('/');
         }
     }, [id, navigate]);
+
+    const handleAskAI = async (e, q) => {
+        e.preventDefault();
+        const userText = followUpInputs[q.id]?.trim();
+        if (!userText) return;
+        
+        // Clear input
+        setFollowUpInputs(prev => ({ ...prev, [q.id]: '' }));
+        
+        // Append user message
+        const currentMessages = chatMessages[q.id] || [];
+        const newMessages = [...currentMessages, { role: 'user', content: userText }];
+        setChatMessages(prev => ({ ...prev, [q.id]: newMessages }));
+        setChatLoading(prev => ({ ...prev, [q.id]: true }));
+        
+        try {
+            const systemPrompt = "Bạn là chuyên gia giảng dạy mạng máy tính. Hãy trả lời câu hỏi phụ của người dùng một cách ngắn gọn, chính xác và dễ hiểu liên quan đến câu hỏi gốc và giải thích gốc.";
+            const apiMessages = [
+                { role: 'system', content: systemPrompt },
+                { 
+                    role: 'user', 
+                    content: `Câu hỏi gốc: ${q.content}\nCác đáp án:\n${q.options.map(o => `${o.label}: ${o.text}`).join('\n')}\nĐáp án đúng: ${q.correct_answer}\nGiải thích gốc: ${q.explanation || 'Chưa có giải thích sẵn.'}` 
+                },
+                ...newMessages
+            ];
+            
+            const response = await fetch('https://api.gaugauai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer sk-NtyQXerBlZhF4Tw8mHlbS6Cy2ODBMoFridMj0Ngqr6KMetOx'
+                },
+                body: JSON.stringify({
+                    model: 'gpt-5.5',
+                    messages: apiMessages
+                })
+            });
+            
+            const data = response.ok ? await response.json() : null;
+            const aiText = data?.choices?.[0]?.message?.content || 'Lỗi xử lý phản hồi từ AI.';
+            
+            setChatMessages(prev => ({ 
+                ...prev, 
+                [q.id]: [...newMessages, { role: 'assistant', content: aiText }] 
+            }));
+        } catch (err) {
+            console.error(err);
+            setChatMessages(prev => ({ 
+                ...prev, 
+                [q.id]: [...newMessages, { role: 'assistant', content: 'Lỗi kết nối tới AI. Vui lòng thử lại!' }] 
+            }));
+        } finally {
+            setChatLoading(prev => ({ ...prev, [q.id]: false }));
+        }
+    };
 
     const handleSelect = (questionId, optionLabel) => {
         if (answers[questionId]) return; // lock answer if already selected
@@ -100,6 +161,79 @@ export default function Exam() {
                                     );
                                 })}
                             </div>
+                            
+                            {isAnswered && (
+                                <div className="mt-5 p-5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 transition-all duration-300">
+                                    <div className="flex items-center gap-2 mb-3 font-extrabold text-blue-600">
+                                        <Bot className="w-5 h-5 text-blue-500 animate-pulse" />
+                                        <span>AI Giải Thích & Hướng Dẫn:</span>
+                                    </div>
+                                    {q.explanation ? (
+                                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{q.explanation}</p>
+                                    ) : (
+                                        <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 p-3 rounded-xl border border-amber-100 font-medium">
+                                            <AlertCircle className="w-4 h-4 text-amber-500" />
+                                            <span>Chưa có giải thích sẵn cho câu hỏi này trong hệ thống. Bạn có thể sử dụng khung chat dưới đây để hỏi AI giải đáp trực tiếp!</span>
+                                        </div>
+                                    )}
+                                    
+                                    {/* Chat Hỏi Thêm AI */}
+                                    <div className="mt-5 pt-4 border-t border-slate-200">
+                                        <div className="flex items-center gap-1.5 mb-3">
+                                            <MessageSquare className="w-4 h-4 text-blue-500" />
+                                            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Hỏi thêm AI về câu hỏi này:</h4>
+                                        </div>
+                                        
+                                        {/* Khung chat tin nhắn */}
+                                        {chatMessages[q.id] && chatMessages[q.id].length > 0 && (
+                                            <div className="space-y-3 max-h-60 overflow-y-auto mb-4 p-3 bg-white rounded-xl border border-gray-150 shadow-inner">
+                                                {chatMessages[q.id].map((msg, idx) => (
+                                                    <div 
+                                                        key={idx} 
+                                                        className={`flex flex-col max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${
+                                                            msg.role === 'user' 
+                                                                ? 'bg-blue-600 text-white ml-auto rounded-tr-none' 
+                                                                : 'bg-slate-100 text-gray-800 mr-auto rounded-tl-none border border-slate-200'
+                                                        }`}
+                                                    >
+                                                        <span className="text-[10px] font-extrabold opacity-75 uppercase tracking-wider mb-0.5">
+                                                            {msg.role === 'user' ? 'Bạn' : '🤖 AI Trợ lý'}
+                                                        </span>
+                                                        <span className="whitespace-pre-wrap leading-relaxed">{msg.content}</span>
+                                                    </div>
+                                                ))}
+                                                {chatLoading[q.id] && (
+                                                    <div className="bg-slate-100 text-gray-800 mr-auto max-w-[85%] rounded-2xl rounded-tl-none border border-slate-200 px-4 py-3 text-sm flex items-center gap-2">
+                                                        <RefreshCw className="w-4 h-4 text-blue-500 animate-spin" />
+                                                        <span className="text-xs text-gray-500 font-medium">AI đang suy nghĩ và gõ câu trả lời...</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        
+                                        {/* Form gửi câu hỏi */}
+                                        <form onSubmit={(e) => handleAskAI(e, q)} className="flex gap-2">
+                                            <input 
+                                                type="text" 
+                                                placeholder="Đặt câu hỏi chi tiết... (Ví dụ: Tại sao câu C lại sai?)" 
+                                                className="flex-1 text-sm bg-white border border-gray-300 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition shadow-sm"
+                                                value={followUpInputs[q.id] || ''}
+                                                onChange={(e) => setFollowUpInputs({ ...followUpInputs, [q.id]: e.target.value })}
+                                                disabled={chatLoading[q.id]}
+                                            />
+                                            <button 
+                                                type="submit" 
+                                                className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-5 py-2.5 rounded-xl font-bold transition flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                                                disabled={!followUpInputs[q.id]?.trim() || chatLoading[q.id]}
+                                            >
+                                                <Send className="w-4 h-4" />
+                                                <span>Gửi</span>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            )}
+
                             {submitted && !q.correct_answer && (
                                 <p className="mt-3 text-sm text-yellow-600">Câu hỏi này chưa được cài đặt đáp án đúng trong hệ thống.</p>
                             )}
