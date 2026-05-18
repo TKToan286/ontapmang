@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env*
+.DS_Store
+*.docx
+*.json
+__pycache__/
+*.pyc
+preview_docx.py
+dump_xml.py
+fix_db.py
+fix_options.py
+update_db.py
+parse_docx.py
+test_docx2txt.py
+import_data.py
