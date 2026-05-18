@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Bot, Sparkles, Send, RefreshCw, AlertCircle, MessageSquare, MoreVertical, AlertTriangle } from 'lucide-react';
+import LatexRenderer from '../components/LatexRenderer';
 
 export default function Exam() {
     const { id } = useParams();
@@ -43,7 +44,7 @@ export default function Exam() {
         setChatLoading(prev => ({ ...prev, [q.id]: true }));
         
         try {
-            const systemPrompt = "Bạn là chuyên gia giảng dạy mạng máy tính. Hãy trả lời câu hỏi phụ của người dùng một cách ngắn gọn, chính xác và dễ hiểu liên quan đến câu hỏi gốc và giải thích gốc.";
+            const systemPrompt = "Bạn là chuyên gia giảng dạy mạng máy tính. Hãy trả lời câu hỏi phụ của người dùng một cách ngắn gọn, chính xác và dễ hiểu. Đối với các công thức toán học hoặc kỹ thuật (như tính toán subnetting, CIDR, thời gian truyền trễ L/R, băng thông delay product, v.v.), bạn bắt buộc phải trả về dưới dạng công thức LaTeX chuẩn. Hãy gói công thức trong ký hiệu $$ công thức $$ cho công thức dòng riêng (block) hoặc $ công thức $ cho công thức viết chung dòng (inline). Ví dụ: $2^8 - 2 = 254$ hoặc $T = \\frac{L}{R}$.";
             const apiMessages = [
                 { role: 'system', content: systemPrompt },
                 { 
@@ -238,7 +239,7 @@ export default function Exam() {
                                         <span>AI Giải Thích & Hướng Dẫn:</span>
                                     </div>
                                     {q.explanation ? (
-                                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{q.explanation}</p>
+                                        <LatexRenderer text={q.explanation} className="text-sm text-gray-700 leading-relaxed" />
                                     ) : (
                                         <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 p-3 rounded-xl border border-amber-100 font-medium">
                                             <AlertCircle className="w-4 h-4 text-amber-500" />
@@ -268,7 +269,7 @@ export default function Exam() {
                                                         <span className="text-[10px] font-extrabold opacity-75 uppercase tracking-wider mb-0.5">
                                                             {msg.role === 'user' ? 'Bạn' : '🤖 AI Trợ lý'}
                                                         </span>
-                                                        <span className="whitespace-pre-wrap leading-relaxed">{msg.content}</span>
+                                                        <LatexRenderer text={msg.content} className="leading-relaxed" />
                                                     </div>
                                                 ))}
                                                 {chatLoading[q.id] && (

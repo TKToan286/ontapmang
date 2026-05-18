@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { getQuestions, updateQuestion, getDuplicates, deleteQuestion } from '../api';
 import { useNavigate } from 'react-router-dom';
+import LatexRenderer from '../components/LatexRenderer';
 
 export default function Admin() {
     const [questions, setQuestions] = useState([]);
@@ -339,7 +340,7 @@ export default function Admin() {
                                         {q.explanation && (
                                             <div className="mt-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 text-sm text-gray-600 leading-relaxed">
                                                 <span className="font-extrabold text-blue-700 block mb-1">💡 Giải thích từ AI:</span>
-                                                {q.explanation}
+                                                <LatexRenderer text={q.explanation} />
                                             </div>
                                         )}
                                         {!q.correct_answer && <p className="text-yellow-600 text-sm mt-3 font-medium">⚠ Chưa có đáp án đúng</p>}
@@ -377,7 +378,7 @@ export default function Admin() {
                                     {q.explanation && (
                                         <div className="mt-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 text-sm text-gray-600 leading-relaxed">
                                             <span className="font-extrabold text-blue-700 block mb-1">💡 Giải thích từ AI:</span>
-                                            {q.explanation}
+                                            <LatexRenderer text={q.explanation} />
                                         </div>
                                     )}
                                     {!q.correct_answer && <p className="text-yellow-600 text-sm mt-3 font-medium">⚠ Chưa có đáp án đúng</p>}
