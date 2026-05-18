@@ -3,7 +3,7 @@ dist/
 .env*
 .DS_Store
 *.docx
-*.json
+/questions.json
 __pycache__/
 *.pyc
 preview_docx.py
