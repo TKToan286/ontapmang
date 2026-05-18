@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Bot, Sparkles, Send, RefreshCw, AlertCircle, MessageSquare } from 'lucide-react';
+import { Bot, Sparkles, Send, RefreshCw, AlertCircle, MessageSquare, MoreVertical, AlertTriangle } from 'lucide-react';
 
 export default function Exam() {
     const { id } = useParams();
@@ -14,6 +14,7 @@ export default function Exam() {
     const [chatMessages, setChatMessages] = useState({}); // { [questionId]: [{ role, content }] }
     const [chatLoading, setChatLoading] = useState({}); // { [questionId]: boolean }
     const [followUpInputs, setFollowUpInputs] = useState({}); // { [questionId]: string }
+    const [activeMenuId, setActiveMenuId] = useState(null); // tracking which 3-dots reported menu is open
 
     useEffect(() => {
         const stored = sessionStorage.getItem('exams');
@@ -82,6 +83,42 @@ export default function Exam() {
         }
     };
 
+    const handleReportQuestion = async (questionId) => {
+        try {
+            // 1. Update main localStorage database
+            const storedQ = localStorage.getItem('quiz_questions');
+            if (storedQ) {
+                const parsedQ = JSON.parse(storedQ);
+                const qIndex = parsedQ.findIndex(q => q.id === questionId);
+                if (qIndex !== -1) {
+                    parsedQ[qIndex].isReported = true;
+                    parsedQ[qIndex].reportReason = "Người dùng báo cáo lỗi";
+                    localStorage.setItem('quiz_questions', JSON.stringify(parsedQ));
+                }
+            }
+
+            // 2. Update active exam in sessionStorage
+            const storedExams = sessionStorage.getItem('exams');
+            if (storedExams) {
+                const exams = JSON.parse(storedExams);
+                const currentExam = exams.find(e => e.id === parseInt(id));
+                if (currentExam) {
+                    const examQ = currentExam.questions.find(q => q.id === questionId);
+                    if (examQ) {
+                        examQ.isReported = true;
+                        examQ.reportReason = "Người dùng báo cáo lỗi";
+                        sessionStorage.setItem('exams', JSON.stringify(exams));
+                        setExam({ ...currentExam });
+                    }
+                }
+            }
+
+            setActiveMenuId(null);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     const handleSelect = (questionId, optionLabel) => {
         if (answers[questionId]) return; // lock answer if already selected
         setAnswers({ ...answers, [questionId]: optionLabel });
@@ -124,8 +161,40 @@ export default function Exam() {
                     const isAnswered = answers[q.id] !== undefined;
                     
                     return (
-                        <div key={q.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4 whitespace-pre-wrap">
+                        <div key={q.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative">
+                            {/* 3-dots Reporting Menu */}
+                            <div className="absolute top-4 right-4 z-10">
+                                {q.isReported ? (
+                                    <span className="flex items-center gap-1 text-xs font-extrabold text-red-600 bg-red-50 border border-red-100 px-3 py-1 rounded-full shadow-sm">
+                                        <AlertTriangle className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+                                        <span>Đã báo cáo lỗi</span>
+                                    </span>
+                                ) : (
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setActiveMenuId(activeMenuId === q.id ? null : q.id)}
+                                            className="p-1.5 rounded-full text-gray-400 hover:text-gray-600 hover:bg-slate-100 transition duration-200"
+                                            title="Tùy chọn câu hỏi"
+                                        >
+                                            <MoreVertical className="w-5 h-5" />
+                                        </button>
+                                        
+                                        {activeMenuId === q.id && (
+                                            <div className="absolute right-0 mt-1 w-36 bg-white border border-gray-200 rounded-xl shadow-lg py-1.5 z-20 animate-in fade-in slide-in-from-top-1 duration-150">
+                                                <button
+                                                    onClick={() => handleReportQuestion(q.id)}
+                                                    className="w-full text-left px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 hover:text-red-700 transition flex items-center gap-1.5"
+                                                >
+                                                    <AlertTriangle className="w-3.5 h-3.5" />
+                                                    <span>Báo cáo câu hỏi</span>
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            <h3 className="text-lg font-semibold text-gray-800 mb-4 whitespace-pre-wrap pr-24">
                                 <span className="text-blue-600 mr-2">Câu {index + 1}:</span>
                                 {q.content}
                             </h3>

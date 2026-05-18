@@ -78,11 +78,30 @@ export default function Admin() {
 
     const handleSave = async (id, updatedData) => {
         try {
-            await updateQuestion(id, updatedData);
+            // Automatically clear reported flags on edit!
+            const cleanData = { 
+                ...updatedData, 
+                isReported: false, 
+                reportReason: undefined 
+            };
+            await updateQuestion(id, cleanData);
             setEditing(null);
             fetchData();
         } catch (err) {
             alert('Lỗi cập nhật');
+        }
+    };
+
+    const handleClearReport = async (id) => {
+        try {
+            const question = questions.find(q => q.id === id);
+            if (question) {
+                await updateQuestion(id, { ...question, isReported: false, reportReason: undefined });
+                fetchData();
+                alert('Đã bỏ cờ báo cáo câu hỏi!');
+            }
+        } catch (err) {
+            alert('Lỗi khi bỏ báo cáo');
         }
     };
 
@@ -119,6 +138,7 @@ export default function Admin() {
 
     if (loading) return <div className="text-center mt-20 text-xl font-semibold">Đang tải dữ liệu...</div>;
 
+    const reportedQuestions = questions.filter(q => q.isReported);
     const totalPages = Math.ceil(questions.length / ITEMS_PER_PAGE);
     const displayedQuestions = questions.slice(
         (currentPage - 1) * ITEMS_PER_PAGE,
@@ -173,6 +193,13 @@ export default function Admin() {
                         onClick={() => setViewMode('exams')}
                     >
                         Cấu hình Đề (13 đề)
+                    </button>
+                    <button 
+                        className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-1.5 ${viewMode === 'reports' ? 'bg-red-600 text-white shadow-md shadow-red-200' : 'bg-red-50 text-red-700 hover:bg-red-100'}`}
+                        onClick={() => setViewMode('reports')}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-alert-triangle"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+                        <span>Báo cáo ({reportedQuestions.length})</span>
                     </button>
                 </div>
             </div>
@@ -248,6 +275,74 @@ export default function Admin() {
                                         </div>
                                     ))}
                                 </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            )}
+
+            {viewMode === 'reports' && (
+                <div className="space-y-6">
+                    <div className="bg-red-50 p-6 rounded-3xl border border-red-150 shadow-sm mb-8">
+                        <div className="flex items-center gap-3">
+                            <div className="bg-red-100 text-red-600 p-2.5 rounded-2xl animate-pulse">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-shield-alert"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="17"/></svg>
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-extrabold text-red-800">Câu hỏi bị báo cáo lỗi ({reportedQuestions.length})</h2>
+                                <p className="text-xs text-red-600 mt-0.5">Danh sách các câu hỏi do học viên gắn cờ báo lỗi nội dung hoặc đáp án trong quá trình làm bài ôn tập.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {reportedQuestions.length === 0 ? (
+                        <div className="text-center py-16 bg-white rounded-3xl border border-gray-100 shadow-sm">
+                            <p className="text-gray-400 font-extrabold text-lg mb-1">🎉 Tuyệt vời! Không có câu hỏi nào bị báo cáo lỗi.</p>
+                            <p className="text-xs text-gray-400">Tất cả các câu hỏi trong hệ thống đang được học viên đánh giá tốt.</p>
+                        </div>
+                    ) : (
+                        reportedQuestions.map((q) => (
+                            <div key={q.id} className="bg-white p-6 rounded-2xl border border-red-200 shadow-sm relative overflow-hidden group hover:shadow-md transition">
+                                <div className="absolute top-0 left-0 w-1.5 h-full bg-red-500"></div>
+                                {editing === q.id ? (
+                                    <EditForm question={q} onSave={(data) => handleSave(q.id, data)} onCancel={() => setEditing(null)} />
+                                ) : (
+                                    <div>
+                                        <div className="flex justify-between items-start mb-4 gap-4">
+                                            <h3 className="text-lg font-bold text-gray-800 whitespace-pre-wrap flex-1">{q.content}</h3>
+                                            <div className="flex-shrink-0 flex gap-2">
+                                                <button onClick={() => setEditing(q.id)} className="text-blue-600 hover:text-blue-700 px-3.5 py-1.5 bg-blue-50 rounded-xl text-xs font-bold transition">Sửa</button>
+                                                <button onClick={() => handleClearReport(q.id)} className="text-green-600 hover:text-green-700 px-3.5 py-1.5 bg-green-50 rounded-xl text-xs font-bold transition">Bỏ qua báo cáo</button>
+                                                <button onClick={() => handleDelete(q.id)} className="text-red-600 hover:text-red-700 px-3.5 py-1.5 bg-red-50 rounded-xl text-xs font-bold transition">Xóa</button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="bg-red-50/50 border border-red-100/50 p-4 rounded-2xl text-xs font-bold text-red-800 mb-4 flex items-start gap-2">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-alert-triangle text-red-500 flex-shrink-0 mt-0.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>
+                                            <div>
+                                                <span className="text-red-600 block uppercase tracking-wider text-[10px] mb-0.5">Lý do báo cáo:</span>
+                                                <span className="font-extrabold text-sm">{q.reportReason || 'Người dùng báo cáo lỗi'}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            {q.options.map(opt => (
+                                                <div key={opt.label} className={`p-3 rounded-xl border ${q.correct_answer === opt.label ? 'border-green-500 bg-green-50 text-green-800 font-medium' : 'border-gray-200 text-gray-600'}`}>
+                                                    <span className="font-bold mr-2">{opt.label}.</span>
+                                                    {opt.text}
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {q.explanation && (
+                                            <div className="mt-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50 text-sm text-gray-600 leading-relaxed">
+                                                <span className="font-extrabold text-blue-700 block mb-1">💡 Giải thích từ AI:</span>
+                                                {q.explanation}
+                                            </div>
+                                        )}
+                                        {!q.correct_answer && <p className="text-yellow-600 text-sm mt-3 font-medium">⚠ Chưa có đáp án đúng</p>}
+                                    </div>
+                                )}
                             </div>
                         ))
                     )}
